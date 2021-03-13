@@ -4,7 +4,7 @@ filetype off
 call plug#begin('~/.vim/plugged')
 
 "colors
-Plug 'bling/vim-airline'
+Plug 'vim-airline/vim-airline'
 Plug 'notpratheek/vim-luna'
 
 "commenting
@@ -27,7 +27,7 @@ Plug 'Galooshi/vim-import-js'
 Plug 'sheerun/vim-polyglot'
 
 "git
-Plug 'chrisbra/vim-diff-enhanced'
+Plug 'jreybert/vimagit'
 
 call plug#end()
 
@@ -78,13 +78,13 @@ colorscheme luna-term
 
 "airline
 let g:airline#extensions#tabline#enabled = 1
+let g:airline#extensions#tabline#formatter = 'unique_tail'
 
 "ale
 let g:ale_fixers = {
  \ 'javascript': ['eslint']
  \ }
 let g:ale_fix_on_save = 1
-
 
 "Functions
 "toggle mouse support
@@ -105,9 +105,9 @@ function! <SID>StripTrailingWhitespaces()
   call cursor(l, c)
 endfunction
 
-
 "save last cursor position
 au BufReadPost * if line("'\"") > 0|if line("'\"") <= line("$")|exe("norm '\"")|else|exe "norm $"|endif|endif
+
 "automatically clean trailing whitespaces on save
 autocmd BufWritePre *.* :call <SID>StripTrailingWhitespaces()
 
@@ -117,18 +117,13 @@ let mapleader = ","
 "toggle mouse support
 nnoremap <leader>m :call ToggleMouse()<CR>
 
+"tab in vmode
 vnoremap < <gv
 vnoremap > >gv
-nnoremap Y y$
-
-map <leader>e :NERDTreeToggle<CR>
-
-"fzf - fuzzy finder
-nmap <leader>p :FZF<CR>
 
 "buffers
-map <leader>n :bn<CR>
-map <leader>p :bp<CR>
+map <Tab> :bn<CR>
+map <s-Tab> :bp<CR>
 map <leader>x :bd<CR>
 
 "save file with sudo
@@ -144,36 +139,46 @@ nmap # #zz
 nmap g* g*zz
 nmap g# g#zz
 
-"shortcut for :%s//
-nnoremap <leader>s :%s/<C-r><C-w>//<left>
+"replace in the file
+nnoremap <leader>s :%s/<C-r><C-w>//gc<left><left><left>
 vnoremap <leader>s :s//<left>
 
-"create a new window
+"search a file by name
+nmap <leader>p :FZF<CR>
+nmap <leader>e :Ex<CR>
+
+"search and replace in multiple files
+nmap <leader>f :Rg<CR>
+nmap <leader>r :cfdo %s/<C-r>///g<left><left>
+
+"navigation between windows
 nmap <leader><left>  :leftabove  vnew<CR>
 nmap <leader><right> :rightbelow vnew<CR>
 nmap <leader><up>    :leftabove  new<CR>
 nmap <leader><down>  :rightbelow new<CR>
-nmap <leader>f :Rg<CR>
-nmap <leader>r :cfdo %s/<C-r>///g<left><left>
+nmap <leader>w  <C-w>w
 
-" started In Diff-Mode set diffexpr (plugin not loaded yet)
-if &diff
-    let &diffexpr='EnhancedDiff#Diff("git diff", "--diff-algorithm=patience")'
-endif
+"" Make <CR> auto-select the first completion item and notify coc.nvim to
+" format on enter, <cr> could be remapped by other vim plugin
+inoremap <silent><expr> <cr> pumvisible() ? coc#_select_confirm()
+                              \: "\<C-g>u\<CR>\<c-r>=coc#on_enter()\<CR>"
 
-" completion by <TAB>
-inoremap <silent><expr> <TAB>
-      \ pumvisible() ? "\<C-n>" :
-      \ <SID>check_back_space() ? "\<TAB>" :
-      \ coc#refresh()
-inoremap <expr><S-TAB> pumvisible() ? "\<C-p>" : "\<C-h>"
-
-function! s:check_back_space() abort
-  let col = col('.') - 1
-  return !col || getline('.')[col - 1]  =~# '\s'
-endfunction
-
+"go to navigation
+"nmap <silent>g to to js file
 nmap <silent> gd <Plug>(coc-definition)
 nmap <silent> gy <Plug>(coc-type-definition)
 nmap <silent> gi <Plug>(coc-implementation)
 nmap <silent> gr <Plug>(coc-references)
+
+"show documentation
+nnoremap <silent> K :call <SID>show_documentation()<CR>
+
+function! s:show_documentation()
+  if (index(['vim','help'], &filetype) >= 0)
+    execute 'h '.expand('<cword>')
+  elseif (coc#rpc#ready())
+    call CocActionAsync('doHover')
+  else
+    execute '!' . &keywordprg . " " . expand('<cword>')
+  endif
+endfunction
